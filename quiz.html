@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>亲密关系测评</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#fdf6f0 0%,#fbeef3 55%,#f3ecf7 100%);min-height:100vh;color:#333}
+.wrap{max-width:560px;margin:0 auto;padding:28px 20px 48px;min-height:100vh;display:flex;flex-direction:column}
+.card{background:#fff;border-radius:20px;box-shadow:0 8px 30px rgba(120,70,90,.10);padding:28px 22px}
+h1{font-size:24px;line-height:1.4;color:#2b2b2b;text-align:center}
+.sub{margin-top:10px;font-size:14px;line-height:1.8;color:#888;text-align:center}
+.btn{display:block;width:100%;margin-top:26px;padding:15px 0;border:none;border-radius:999px;background:linear-gradient(90deg,#e26d8d,#c86dd7);color:#fff;font-size:17px;font-weight:600;letter-spacing:2px;cursor:pointer}
+.btn:active{opacity:.85}
+.btn.ghost{background:#fff;color:#c86dd7;border:1.5px solid #e5c8dd}
+.note{margin-top:18px;font-size:12.5px;line-height:1.9;color:#aaa;text-align:center}
+.progress{height:8px;background:#f0e4ea;border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#e26d8d,#c86dd7);border-radius:99px;transition:width .25s}
+.count{margin:16px 0 8px;font-size:13px;color:#999}
+.qtext{font-size:19px;line-height:1.65;font-weight:600;color:#2b2b2b;min-height:96px}
+.opt{display:block;width:100%;margin-top:12px;padding:14px 16px;border:1.5px solid #eee;border-radius:14px;background:#faf7f9;font-size:16px;color:#444;cursor:pointer;text-align:left}
+.opt.sel{border-color:#c86dd7;background:#fbeef7;color:#a03d7c;font-weight:600}
+.prev{margin-top:22px;text-align:center;font-size:14px;color:#bbb;cursor:pointer}
+.score-big{font-size:56px;font-weight:800;color:#c86dd7;text-align:center;line-height:1.1}
+.score-big small{font-size:16px;color:#999;font-weight:400}
+.code-box{margin-top:20px;background:#faf7f9;border:1.5px dashed #d9b8cf;border-radius:14px;padding:16px;text-align:center}
+.code-box .code{font-size:19px;letter-spacing:2px;color:#5b2a4a;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+.code-box .tip{margin-top:8px;font-size:12.5px;color:#999;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="screen-start">
+    <div class="card">
+      <h1>亲密关系测评</h1>
+      <p class="sub">40 道题 · 约 5 分钟<br>测测你们的亲密关系状态</p>
+      <p class="sub" style="text-align:left;color:#666">请根据最近半年的真实感受作答，没有标准答案，也没有对错。凭第一感觉选，最接近真实的你。</p>
+      <button class="btn" onclick="startQuiz()">开始测评</button>
+      <p class="note">测评结果仅供参考 · 答题内容不会被保存</p>
+    </div>
+  </div>
+
+  <div id="screen-q" style="display:none">
+    <div class="progress"><i id="bar"></i></div>
+    <p class="count" id="count"></p>
+    <div class="card">
+      <p class="qtext" id="qtext"></p>
+      <div id="opts"></div>
+    </div>
+    <p class="prev" id="prevBtn" onclick="prevQ()">← 上一题</p>
+  </div>
+
+  <div id="screen-done" style="display:none">
+    <div class="card">
+      <h1>测评完成</h1>
+      <p class="sub">你的总分是</p>
+      <p class="score-big"><span id="totalScore"></span><small> 分</small></p>
+      <p class="sub">满分 200 分</p>
+      <div class="code-box">
+        <div class="code" id="codeText"></div>
+        <p class="tip">结果码</p>
+      </div>
+      <button class="btn" onclick="copyCode()">复制结果码</button>
+      <p class="note">请把结果码发回给发你这条链接的人<br>感谢参与</p>
+      <button class="btn ghost" onclick="restart()">重新测评</button>
+    </div>
+  </div>
+
+</div>
+<script>
+var QUESTIONS = [{"t": "我觉得伴侣真正理解我、重视我的感受。", "r": true}, {"t": "遇到烦心事，我第一时间想倾诉的人是伴侣。", "r": true}, {"t": "最近半年，我经常觉得在这段关系里很孤单。", "r": false}, {"t": "我对目前的感情状态总体是满意的。", "r": true}, {"t": "我经常幻想如果换一个伴侣，生活会更好。", "r": false}, {"t": "我对目前的性生活频率和质量感到满意。", "r": true}, {"t": "伴侣很少主动表达对我的身体吸引和欲望。", "r": false}, {"t": "我经常渴望更多的身体亲密，但得不到回应。", "r": false}, {"t": "我会通过幻想其他人来弥补亲密感的缺失。", "r": false}, {"t": "我觉得伴侣已经把我当成“家人”，而不是“女人”。", "r": false}, {"t": "我害怕伴侣会离开我，所以会过度在意他的回应速度和态度。", "r": false}, {"t": "当关系变得太亲密时，我会本能地想退一步、保持距离。", "r": false}, {"t": "我很难完全信任一个人，总觉得对方可能背叛我。", "r": false}, {"t": "我习惯把真实需求藏起来，不愿向伴侣示弱。", "r": false}, {"t": "吵架后，我宁愿冷战也不愿主动沟通。", "r": false}, {"t": "我喜欢新鲜感，讨厌一成不变的生活。", "r": false}, {"t": "我做决定常凭一时冲动，事后才考虑后果。", "r": false}, {"t": "我很容易对有魅力的人产生好感。", "r": false}, {"t": "规则和承诺对我来说是可以灵活变通的。", "r": false}, {"t": "冒险和刺激会让我感到兴奋、觉得自己还活着。", "r": false}, {"t": "我工作或社交中经常和异性单独相处。", "r": false}, {"t": "我和前任还保持联系，偶尔会聊天。", "r": false}, {"t": "社交软件上有异性经常找我聊天、点赞互动。", "r": false}, {"t": "我经常有不被伴侣知道的独处时间（出差、加班、聚会）。", "r": false}, {"t": "身边的朋友中有人出轨，而且她们过得似乎不错。", "r": false}, {"t": "我认为只要不被发现，偶尔的精神出轨不算大问题。", "r": false}, {"t": "我认为感情淡了，寻找新的人是合理的选择。", "r": false}, {"t": "出轨在我看来是严重的背叛，绝不能接受。", "r": true}, {"t": "我的家庭或成长环境中有人出过轨。", "r": false}, {"t": "如果遇到非常有吸引力的人，我不确定自己能守住底线。", "r": false}, {"t": "最近我经常感到焦虑、抑郁或情绪低落。", "r": false}, {"t": "我觉得自己的付出没有得到应有的回报和认可。", "r": false}, {"t": "我对自己的外貌和魅力很不自信，需要外界的肯定。", "r": false}, {"t": "生活压力很大，我渴望有一个出口或慰藉。", "r": false}, {"t": "我经常觉得自己被忽视、不被爱。", "r": false}, {"t": "最近我突然很在意打扮、健身、换香水或买新内衣。", "r": false}, {"t": "我的手机不离身，洗澡也带着，密码也换了。", "r": false}, {"t": "我加班、出差、和朋友聚会突然变多了，行踪也不太想细说。", "r": false}, {"t": "我对伴侣的态度忽冷忽热，有时又突然异常体贴。", "r": false}, {"t": "我经常提起某个异性同事或朋友的名字，或者刻意回避提起他。", "r": false}];
+
+function encodeResult(total, dims){
+  var body = total + '|' + dims.map(function(d){ return d.toFixed(1); }).join(',');
+  var h = 0;
+  for (var i = 0; i < body.length; i++){ h = (h * 31 + body.charCodeAt(i)) % 9973; }
+  var raw = body + '|' + h.toString(36);
+  return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeResult(code){
+  try{
+    var s = String(code || '').replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4){ s += '='; }
+    var raw = atob(s);
+    var parts = raw.split('|');
+    if (parts.length !== 3){ return null; }
+    var body = parts[0] + '|' + parts[1];
+    var h = 0;
+    for (var i = 0; i < body.length; i++){ h = (h * 31 + body.charCodeAt(i)) % 9973; }
+    if (h.toString(36) !== parts[2]){ return null; }
+    var dims = parts[1].split(',').map(Number);
+    if (dims.length !== 8){ return null; }
+    for (var j = 0; j < dims.length; j++){ if (isNaN(dims[j])){ return null; } }
+    var total = parseInt(parts[0], 10);
+    if (isNaN(total) || total < 40 || total > 200){ return null; }
+    return { total: total, dims: dims };
+  }catch(e){ return null; }
+}
+function prettyCode(code){
+  return String(code).replace(/(.{4})/g, '$1 ').trim();
+}
+
+var OPTS = [
+  {v:1, label:'完全不符合'},
+  {v:2, label:'不太符合'},
+  {v:3, label:'一般'},
+  {v:4, label:'比较符合'},
+  {v:5, label:'非常符合'}
+];
+var answers = [];
+for (var i = 0; i < QUESTIONS.length; i++){ answers.push(0); }
+var idx = 0;
+var lastCode = '';
+
+function $(id){ return document.getElementById(id); }
+function show(id){
+  $('screen-start').style.display = 'none';
+  $('screen-q').style.display = 'none';
+  $('screen-done').style.display = 'none';
+  $(id).style.display = 'block';
+  window.scrollTo(0, 0);
+}
+function startQuiz(){
+  for (var i = 0; i < answers.length; i++){ answers[i] = 0; }
+  idx = 0;
+  renderQ();
+  show('screen-q');
+}
+function renderQ(){
+  $('bar').style.width = ((idx + 1) / QUESTIONS.length * 100) + '%';
+  $('count').textContent = '第 ' + (idx + 1) + ' / ' + QUESTIONS.length + ' 题';
+  $('qtext').textContent = QUESTIONS[idx].t;
+  $('prevBtn').style.visibility = idx > 0 ? 'visible' : 'hidden';
+  var html = '';
+  for (var k = 0; k < OPTS.length; k++){
+    var sel = answers[idx] === OPTS[k].v ? ' sel' : '';
+    html += '<button class="opt' + sel + '" onclick="choose(' + OPTS[k].v + ')">' + OPTS[k].label + '</button>';
+  }
+  $('opts').innerHTML = html;
+}
+function choose(v){
+  answers[idx] = v;
+  renderQ();
+  setTimeout(function(){
+    if (idx < QUESTIONS.length - 1){ idx++; renderQ(); }
+    else { finish(); }
+  }, 180);
+}
+function prevQ(){
+  if (idx > 0){ idx--; renderQ(); }
+}
+function finish(){
+  var total = 0, dims = [];
+  for (var d = 0; d < 8; d++){
+    var s = 0;
+    for (var k = 0; k < 5; k++){
+      var q = QUESTIONS[d * 5 + k], v = answers[d * 5 + k];
+      s += q.r ? (6 - v) : v;
+    }
+    dims.push(s / 5);
+    total += s;
+  }
+  lastCode = encodeResult(total, dims);
+  $('totalScore').textContent = total;
+  $('codeText').textContent = prettyCode(lastCode);
+  show('screen-done');
+}
+function copyCode(){
+  var done = function(){ alert('已复制，去粘贴发回吧'); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(lastCode).then(done, function(){ fallbackCopy(); done(); });
+  } else { fallbackCopy(); done(); }
+}
+function fallbackCopy(){
+  var ta = document.createElement('textarea');
+  ta.value = lastCode;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+}
+function restart(){ startQuiz(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>测评结果解码</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#fdf6f0 0%,#fbeef3 55%,#f3ecf7 100%);min-height:100vh;color:#333}
+.wrap{max-width:560px;margin:0 auto;padding:28px 20px 48px;min-height:100vh;display:flex;flex-direction:column}
+.card{background:#fff;border-radius:20px;box-shadow:0 8px 30px rgba(120,70,90,.10);padding:28px 22px}
+h1{font-size:24px;line-height:1.4;color:#2b2b2b;text-align:center}
+.sub{margin-top:10px;font-size:14px;line-height:1.8;color:#888;text-align:center}
+.btn{display:block;width:100%;margin-top:26px;padding:15px 0;border:none;border-radius:999px;background:linear-gradient(90deg,#e26d8d,#c86dd7);color:#fff;font-size:17px;font-weight:600;letter-spacing:2px;cursor:pointer}
+.btn:active{opacity:.85}
+.btn.ghost{background:#fff;color:#c86dd7;border:1.5px solid #e5c8dd}
+.note{margin-top:18px;font-size:12.5px;line-height:1.9;color:#aaa;text-align:center}
+.progress{height:8px;background:#f0e4ea;border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#e26d8d,#c86dd7);border-radius:99px;transition:width .25s}
+.count{margin:16px 0 8px;font-size:13px;color:#999}
+.qtext{font-size:19px;line-height:1.65;font-weight:600;color:#2b2b2b;min-height:96px}
+.opt{display:block;width:100%;margin-top:12px;padding:14px 16px;border:1.5px solid #eee;border-radius:14px;background:#faf7f9;font-size:16px;color:#444;cursor:pointer;text-align:left}
+.opt.sel{border-color:#c86dd7;background:#fbeef7;color:#a03d7c;font-weight:600}
+.prev{margin-top:22px;text-align:center;font-size:14px;color:#bbb;cursor:pointer}
+.score-big{font-size:56px;font-weight:800;color:#c86dd7;text-align:center;line-height:1.1}
+.score-big small{font-size:16px;color:#999;font-weight:400}
+.code-box{margin-top:20px;background:#faf7f9;border:1.5px dashed #d9b8cf;border-radius:14px;padding:16px;text-align:center}
+.code-box .code{font-size:19px;letter-spacing:2px;color:#5b2a4a;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+.code-box .tip{margin-top:8px;font-size:12.5px;color:#999;line-height:1.7}
+
+textarea{width:100%;min-height:76px;margin-top:14px;padding:12px;border:1.5px solid #e5d3de;border-radius:12px;font-size:15px;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+.band{margin-top:20px;border-radius:16px;padding:18px;text-align:center}
+.band.low{background:#eef7ee}.band.midlow{background:#fbf7e6}.band.mid{background:#fdf1e3}.band.high{background:#fdeceb}.band.vhigh{background:#fbe4e4}
+.band .b-name{font-size:22px;font-weight:800}
+.band .b-prob{margin-top:4px;font-size:14px;color:#666}
+.band .b-desc{margin-top:10px;font-size:13.5px;line-height:1.8;color:#555;text-align:left}
+.dim{margin-top:14px}
+.dim .d-head{display:flex;justify-content:space-between;font-size:14px}
+.dim .d-head b{font-weight:600}
+.dim .d-bar{height:10px;background:#f0e4ea;border-radius:99px;overflow:hidden;margin-top:6px}
+.dim .d-bar i{display:block;height:100%;border-radius:99px}
+.dim .d-tag{margin-top:4px;font-size:12px;color:#999}
+.warn{margin-top:18px;background:#fff7e6;border:1px solid #f0d9a0;border-radius:12px;padding:14px;font-size:13.5px;line-height:1.9;color:#7a5a12}
+.err{margin-top:14px;color:#c0392b;font-size:14px;text-align:center}
+h2{font-size:18px;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>测评结果解码</h1>
+    <p class="sub">仅发起人使用 · 请勿把此页转发给答题的人</p>
+    <textarea id="codeInput" placeholder="粘贴对方发回的结果码"></textarea>
+    <button class="btn" onclick="doDecode()">查看完整解读</button>
+    <p class="err" id="errMsg" style="display:none">结果码不对，检查一下是不是复制全了（注意空格不用管）</p>
+    <div id="result" style="display:none">
+      <p class="sub" style="margin-top:22px">总分</p>
+      <p class="score-big"><span id="totalScore"></span><small> 分 / 满分 200</small></p>
+      <div class="band" id="bandBox">
+        <div class="b-name" id="bandName"></div>
+        <div class="b-prob" id="bandProb"></div>
+        <div class="b-desc" id="bandDesc"></div>
+      </div>
+      <h2>八个维度</h2>
+      <div id="dims"></div>
+      <div class="warn" id="comboWarn" style="display:none"></div>
+      <p class="note" style="margin-top:22px">分数是风险评估，不是证据。再高的分也不能直接当成“出轨了”的结论，只能说明关系里哪些地方需要修补、沟通的紧迫性有多高。</p>
+      <button class="btn ghost" onclick="resetAll()">再解一个</button>
+    </div>
+  </div>
+</div>
+<script>
+var DIMS = ["情感联结与关系满意度", "性满意度与亲密需求", "依恋风格", "人格特质与寻求刺激", "机会与环境", "价值观与道德约束", "情绪与压力状态", "行为信号"];
+
+function encodeResult(total, dims){
+  var body = total + '|' + dims.map(function(d){ return d.toFixed(1); }).join(',');
+  var h = 0;
+  for (var i = 0; i < body.length; i++){ h = (h * 31 + body.charCodeAt(i)) % 9973; }
+  var raw = body + '|' + h.toString(36);
+  return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeResult(code){
+  try{
+    var s = String(code || '').replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4){ s += '='; }
+    var raw = atob(s);
+    var parts = raw.split('|');
+    if (parts.length !== 3){ return null; }
+    var body = parts[0] + '|' + parts[1];
+    var h = 0;
+    for (var i = 0; i < body.length; i++){ h = (h * 31 + body.charCodeAt(i)) % 9973; }
+    if (h.toString(36) !== parts[2]){ return null; }
+    var dims = parts[1].split(',').map(Number);
+    if (dims.length !== 8){ return null; }
+    for (var j = 0; j < dims.length; j++){ if (isNaN(dims[j])){ return null; } }
+    var total = parseInt(parts[0], 10);
+    if (isNaN(total) || total < 40 || total > 200){ return null; }
+    return { total: total, dims: dims };
+  }catch(e){ return null; }
+}
+function prettyCode(code){
+  return String(code).replace(/(.{4})/g, '$1 ').trim();
+}
+
+function $(id){ return document.getElementById(id); }
+function bandOf(total){
+  if (total <= 80)  return {name:'低风险',   prob:'参考概率 < 10%',  cls:'low',   desc:'关系基础稳固，偶发波动属于正常范围。'};
+  if (total <= 110) return {name:'中低风险', prob:'参考概率 10–25%', cls:'midlow',desc:'有个别薄弱环节，值得留意但不必过度紧张。'};
+  if (total <= 140) return {name:'中风险',   prob:'参考概率 25–50%', cls:'mid',   desc:'已经出现多个风险信号，建议正视问题、主动沟通。'};
+  if (total <= 165) return {name:'高风险',   prob:'参考概率 50–75%', cls:'high',  desc:'多维度同时亮红灯，出轨的心理条件基本具备，只差触发事件。'};
+  return {name:'极高风险', prob:'参考概率 > 75%',  cls:'vhigh', desc:'风险已非常高，需要认真对待。'};
+}
+function dimTag(avg){
+  if (avg >= 4)   return {t:'红色预警', c:'#d64545'};
+  if (avg >= 3)   return {t:'黄色注意', c:'#d9930d'};
+  return {t:'正常', c:'#4caf7d'};
+}
+function doDecode(){
+  var r = decodeResult($('codeInput').value);
+  if (!r){ $('errMsg').style.display = 'block'; $('result').style.display = 'none'; return; }
+  $('errMsg').style.display = 'none';
+  $('totalScore').textContent = r.total;
+  var b = bandOf(r.total);
+  var box = $('bandBox');
+  box.className = 'band ' + b.cls;
+  $('bandName').textContent = b.name;
+  $('bandProb').textContent = b.prob;
+  $('bandDesc').textContent = b.desc;
+  var html = '';
+  for (var i = 0; i < 8; i++){
+    var avg = r.dims[i], tag = dimTag(avg);
+    html += '<div class="dim"><div class="d-head"><b>' + DIMS[i] + '</b><span>' + avg.toFixed(1) + ' 分 · ' + tag.t + '</span></div>'
+      + '<div class="d-bar"><i style="width:' + (avg / 5 * 100) + '%;background:' + tag.c + '"></i></div></div>';
+  }
+  $('dims').innerHTML = html;
+  var warn = '';
+  if (r.dims[0] >= 3.5 && r.dims[1] >= 3.5 && r.dims[6] >= 3.5){
+    warn += '⚠ 最危险组合：情感联结、性亲密、情绪状态三个维度同时偏高，这是女性出轨最常见的心理路径，即使总分只是中风险也要高度重视。<br>';
+  }
+  if (r.dims[5] >= 4){
+    warn += '⚠ 底线指标：价值观与道德约束维度 ≥4，意味着道德约束已经松动，机会一上来就很容易出事。';
+  }
+  var w = $('comboWarn');
+  if (warn){ w.innerHTML = warn; w.style.display = 'block'; }
+  else { w.style.display = 'none'; }
+  $('result').style.display = 'block';
+}
+function resetAll(){
+  $('codeInput').value = '';
+  $('result').style.display = 'none';
+  $('errMsg').style.display = 'none';
+}
+</script>
+</body>
+</html>
